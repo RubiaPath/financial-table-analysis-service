@@ -12,11 +12,11 @@ echo
 [ -d "models/sam3/checkpoints" ] || { echo "ERROR: SAM3 not found"; exit 1; }
 [ -d "models/ollama/models" ] || { echo "ERROR: Ollama not found"; exit 1; }
 
-tar -C models -czf model.tar.gz sam3/checkpoints ollama/models
-du -sh model.tar.gz
+tar -C models -czf models/model.tar.gz sam3/checkpoints ollama/models
+du -sh models/model.tar.gz
 
-aws s3 cp model.tar.gz "$S3_URI" --region "$AWS_REGION"
-rm model.tar.gz
+aws s3 cp models/model.tar.gz "$S3_URI" --region "$AWS_REGION"
+rm models/model.tar.gz
 
 echo "Done"
 

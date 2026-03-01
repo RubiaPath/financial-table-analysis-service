@@ -47,6 +47,9 @@ RUN curl -fsSL https://ollama.ai/install.sh | sh
 # Copy FastAPI application code
 COPY src/ /opt/program/src/
 
+# Copy configuration
+COPY config.yaml /opt/program/config.yaml
+
 # Add the SageMaker-compatible entrypoint script
 COPY serve /usr/local/bin/serve
 RUN chmod +x /usr/local/bin/serve

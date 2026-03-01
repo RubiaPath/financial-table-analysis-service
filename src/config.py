@@ -5,7 +5,21 @@ from typing import List
 import yaml
 
 class Settings:
-    def __init__(self, config_path: str = "config.yaml"):
+    def __init__(self, config_path: str = None):
+        if config_path is None:
+            # Look for config.yaml in /opt/program or current directory
+            paths = [
+                Path("/opt/program/config.yaml"),
+                Path("config.yaml"),
+                Path(__file__).parent.parent / "config.yaml"
+            ]
+            for p in paths:
+                if p.exists():
+                    config_path = str(p)
+                    break
+            if config_path is None:
+                raise FileNotFoundError("config.yaml not found in /opt/program, ., or project root")
+        
         with open(config_path) as f:
             cfg = yaml.safe_load(f)
         

@@ -13,7 +13,7 @@ if not ROLE_ARN or not IMAGE_URI:
     print("ERROR: ROLE_ARN and IMAGE_URI required")
     sys.exit(1)
 
-MODEL_DATA_URL = os.getenv("MODEL_DATA_URL", "s3://sam3-storage/models/model.tar.gz")
+MODEL_DATA_URL = os.getenv("MODEL_DATA_URL", "s3://table-analysis-storage-models/model.tar.gz")
 INSTANCE_TYPE = os.getenv("INSTANCE_TYPE", "ml.g4dn.xlarge")
 MODEL_NAME = os.getenv("MODEL_NAME", "financial-table-analysis-model")
 EPC_NAME = os.getenv("EPC_NAME", "financial-table-analysis-epc")

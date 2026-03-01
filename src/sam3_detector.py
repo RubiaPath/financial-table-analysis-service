@@ -12,6 +12,47 @@ from src.config import settings
 
 logger = logging.getLogger(__name__)
 
+# src/hf_offline_patch.py
+import os
+from pathlib import Path
+
+def apply_hf_offline_patch(model_dir_env: str = "SM_MODEL_DIR", subdir: str = "checkpoints") -> None:
+    """
+    Force all HF hub downloads to resolve from local files under:
+      ${SM_MODEL_DIR}/checkpoints/<filename>
+    This prevents gated repo 401 on SageMaker.
+    """
+    model_dir = Path(os.environ.get(model_dir_env, "/opt/ml/model"))
+    local = model_dir / subdir
+
+    def _local_hf_hub_download(repo_id, filename, *args, **kwargs):
+        p = local / filename
+        if not p.exists():
+            raise FileNotFoundError(f"Local file not found for {filename}: {p}")
+        return str(p)
+
+    def _local_snapshot_download(repo_id, *args, **kwargs):
+        return str(local)
+
+    import huggingface_hub
+
+    # Patch top-level
+    huggingface_hub.hf_hub_download = _local_hf_hub_download
+    huggingface_hub.snapshot_download = _local_snapshot_download
+
+    # Patch common internal modules (covers more call sites)
+    try:
+        import huggingface_hub.file_download as fd
+        fd.hf_hub_download = _local_hf_hub_download
+    except Exception:
+        pass
+
+    try:
+        import huggingface_hub._snapshot_download as sd
+        sd.snapshot_download = _local_snapshot_download
+    except Exception:
+        pass
+
 
 def to_cpu_numpy(x) -> Optional[np.ndarray]:
     """Convert torch Tensor / list / numpy to numpy."""
@@ -67,6 +108,7 @@ class SAM3Detector:
         """Initialize SAM3 model - exact notebook logic"""
         try:
             # Find SAM3 directory
+            apply_hf_offline_patch()
             sam3_dir = Path("/opt/program/sam3").resolve()
             
             if not sam3_dir.exists():

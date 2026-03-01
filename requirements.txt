@@ -4,6 +4,10 @@ requests
 pillow
 numpy
 PyYAML
+einops
+psutil
+pycocotools
+decord
 python-multipart
 
 # Note: torch, torchvision, and CUDA are included in the PyTorch base image

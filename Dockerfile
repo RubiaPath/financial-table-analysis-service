@@ -23,6 +23,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git ca-certificates curl wget \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Ollama (download or setup)
+RUN curl -fsSL https://ollama.ai/install.sh | sh
+
 # Working directory for application code
 WORKDIR /opt/program
 
@@ -40,9 +43,6 @@ RUN pip install --no-cache-dir -r /opt/program/requirements.txt
 
 # Install SAM3 from source at the pinned commit (editable install)
 RUN pip install --no-cache-dir -e /opt/program/sam3
-
-# Install Ollama (download or setup)
-RUN curl -fsSL https://ollama.ai/install.sh | sh
 
 # Copy FastAPI application code
 COPY src/ /opt/program/src/

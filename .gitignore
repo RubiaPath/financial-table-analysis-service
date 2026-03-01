@@ -58,6 +58,7 @@ logs/
 
 # Documents
 docs/
+images/
 
 # Test results
 .pytest_cache/

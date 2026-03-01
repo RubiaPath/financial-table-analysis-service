@@ -1,0 +1,33 @@
+api:
+  host: 0.0.0.0
+  port: 8080
+  title: Financial Table Analysis Service
+  version: 1.0.0
+
+models:
+  base_path: /opt/ml/model
+  sam3:
+    checkpoint_dir: /opt/ml/model/sam3/checkpoints
+    model_name: sam3.1_large_ft
+    device: cuda
+    confidence_threshold: 0.5
+    text_prompt: financial table
+  ollama:
+    host: http://127.0.0.1:11434
+    model: Qwen3-8B
+    timeout: 60
+
+classification:
+  page_types:
+    - main
+    - supplement
+    - other
+  table_types:
+    - BALANCE_SHEET
+    - INCOME_STATEMENT
+    - CASH_FLOW
+    - EQUITY
+    - NOTES
+    - OTHER_FINANCIAL
+    - NON_FINANCIAL
+    - UNKNOWN

@@ -1,0 +1,130 @@
+#!/bin/bash
+# SageMaker entrypoint script
+# Starts Ollama, SAM3 model server, and FastAPI application in a single container
+# This script is called as the CMD in the Dockerfile
+
+set -e
+
+# Logging function
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+}
+
+# Error handler
+error_exit() {
+    log "ERROR: $1"
+    exit 1
+}
+
+# Cleanup function (trap EXIT)
+cleanup() {
+    log "Cleaning up..."
+    pkill -f ollama || true
+    pkill -f uvicorn || true
+}
+trap cleanup EXIT
+
+log "Starting Financial Table Analysis Service"
+log "Model directory: $SM_MODEL_DIR"
+log "Ollama models: $OLLAMA_MODELS"
+log "SAM3 checkpoint: $SAM3_CHECKPOINT_DIR"
+
+# Verify model directories exist
+if [ ! -d "$SM_MODEL_DIR/sam3/checkpoints" ]; then
+    error_exit "SAM3 checkpoint directory not found at $SM_MODEL_DIR/sam3/checkpoints"
+fi
+
+if [ ! -d "$SM_MODEL_DIR/ollama/models" ]; then
+    error_exit "Ollama models directory not found at $SM_MODEL_DIR/ollama/models"
+fi
+
+# Check for SAM3 model weights
+log "Checking for SAM3 model weights..."
+SAM3_MODELS=$(find "$SM_MODEL_DIR/sam3/checkpoints" -name "*.pt" 2>/dev/null | head -n 1)
+if [ -z "$SAM3_MODELS" ]; then
+    error_exit "No SAM3 model (.pt files) found in $SM_MODEL_DIR/sam3/checkpoints"
+fi
+log "Found SAM3 model: $SAM3_MODELS"
+
+# Start Ollama service in background
+log "Starting Ollama service..."
+export OLLAMA_HOST=127.0.0.1:11434
+export OLLAMA_MODELS="$OLLAMA_MODELS"
+
+# Run Ollama in background
+ollama serve > /var/log/ollama.log 2>&1 &
+OLLAMA_PID=$!
+log "Ollama started (PID: $OLLAMA_PID)"
+
+# Wait for Ollama to be ready
+log "Waiting for Ollama service to be ready..."
+max_retries=60
+retry_count=0
+while [ $retry_count -lt $max_retries ]; do
+    if curl -s http://127.0.0.1:11434/api/tags > /dev/null 2>&1; then
+        log "Ollama service is ready"
+        break
+    fi
+    retry_count=$((retry_count + 1))
+    if [ $((retry_count % 10)) -eq 0 ]; then
+        log "Waiting for Ollama... ($retry_count/$max_retries)"
+    fi
+    sleep 1
+done
+
+if [ $retry_count -eq $max_retries ]; then
+    log "WARNING: Ollama did not become ready after ${max_retries}s, but continuing..."
+    log "Ollama logs:"
+    tail -n 20 /var/log/ollama.log
+fi
+
+# Make Ollama accessible from localhost:11434 (both IPv4 and IPv6)
+log "Ollama endpoint: http://127.0.0.1:11434"
+
+# Start FastAPI application
+log "Starting FastAPI application..."
+cd /opt/program
+
+# Set environment variables for the app
+export PYTHONPATH=/opt/program:$PYTHONPATH
+export OLLAMA_HOST="http://127.0.0.1:11434"
+export MODEL_BASE_PATH="$SM_MODEL_DIR"
+export SAM3_CHECKPOINT_DIR="$SM_MODEL_DIR/sam3/checkpoints"
+export OLLAMA_MODELS_DIR="$SM_MODEL_DIR/ollama/models"
+export API_HOST="0.0.0.0"
+export API_PORT="8080"
+
+# Run FastAPI with uvicorn directly
+log "Starting uvicorn on 0.0.0.0:8080"
+uvicorn src.main:app \
+    --host 0.0.0.0 \
+    --port 8080 \
+    --log-level info &
+UVICORN_PID=$!
+log "FastAPI started (PID: $UVICORN_PID)"
+
+# Wait for FastAPI to be ready
+log "Waiting for FastAPI service to be ready..."
+max_retries=60
+retry_count=0
+while [ $retry_count -lt $max_retries ]; do
+    if curl -s http://127.0.0.1:8080/health > /dev/null 2>&1; then
+        log "FastAPI service is ready"
+        break
+    fi
+    retry_count=$((retry_count + 1))
+    if [ $((retry_count % 10)) -eq 0 ]; then
+        log "Waiting for FastAPI... ($retry_count/$max_retries)"
+    fi
+    sleep 1
+done
+
+if [ $retry_count -eq $max_retries ]; then
+    log "WARNING: FastAPI did not become ready after ${max_retries}s"
+fi
+
+log "All services started successfully!"
+log "Table Analysis Service is now listening on port 8080"
+
+# Keep the container running - wait for both processes
+wait

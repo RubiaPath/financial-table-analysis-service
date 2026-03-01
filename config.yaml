@@ -14,7 +14,7 @@ models:
     text_prompt: financial table
   ollama:
     host: http://127.0.0.1:11434
-    model: Qwen3-8B
+    model: qwen3:8b
     timeout: 60
 
 classification:

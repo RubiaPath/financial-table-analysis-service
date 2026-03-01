@@ -46,10 +46,18 @@ if [ -z "$SAM3_MODELS" ]; then
 fi
 log "Found SAM3 model: $SAM3_MODELS"
 
+# Check for Ollama model weights
+log "Checking for Ollama model files..."
+OLLAMA_MODEL_COUNT=$(find "$SM_MODEL_DIR/ollama/models" -type f 2>/dev/null | wc -l)
+if [ "$OLLAMA_MODEL_COUNT" -eq 0 ]; then
+    error_exit "No Ollama model files found in $SM_MODEL_DIR/ollama/models"
+fi
+log "Found $OLLAMA_MODEL_COUNT Ollama model files"
+
 # Start Ollama service in background
 log "Starting Ollama service..."
-export OLLAMA_HOST=127.0.0.1:11434
-export OLLAMA_MODELS="$OLLAMA_MODELS"
+export OLLAMA_HOST=http://127.0.0.1:11434
+export OLLAMA_MODELS="$SM_MODEL_DIR/ollama/models"
 
 # Run Ollama in background
 ollama serve > /var/log/ollama.log 2>&1 &

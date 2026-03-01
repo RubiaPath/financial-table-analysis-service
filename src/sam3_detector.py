@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 import os
 from pathlib import Path
 
-def apply_hf_offline_patch(model_dir_env: str = "SM_MODEL_DIR", subdir: str = "checkpoints") -> None:
+def apply_hf_offline_patch(model_dir_env: str = "SM_MODEL_DIR", subdir: str = "sam3/checkpoints") -> None:
     """
     Force all HF hub downloads to resolve from local files under:
-      ${SM_MODEL_DIR}/checkpoints/<filename>
+      ${SM_MODEL_DIR}/sam3/checkpoints/<filename>
     This prevents gated repo 401 on SageMaker.
     """
     model_dir = Path(os.environ.get(model_dir_env, "/opt/ml/model"))

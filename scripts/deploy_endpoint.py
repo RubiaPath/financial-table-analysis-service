@@ -14,7 +14,7 @@ if not ROLE_ARN or not IMAGE_URI:
     sys.exit(1)
 
 MODEL_DATA_URL = os.getenv("MODEL_DATA_URL", "s3://table-analysis-storage-models/model.tar.gz")
-INSTANCE_TYPE = os.getenv("INSTANCE_TYPE", "ml.g4dn.xlarge")
+INSTANCE_TYPE = os.getenv("INSTANCE_TYPE", "ml.g6.xlarge")
 MODEL_NAME = os.getenv("MODEL_NAME", "financial-table-analysis-model")
 EPC_NAME = os.getenv("EPC_NAME", "financial-table-analysis-epc")
 ENDPOINT_NAME = os.getenv("ENDPOINT_NAME", "financial-table-analysis")
@@ -43,7 +43,8 @@ def create_model():
         )
         print("Model created")
     except ClientError as e:
-        if e.response["Error"]["Code"] in ("ValidationException", "ResourceInUse"):
+        code = e.response["Error"]["Code"]
+        if code == "ResourceInUse":
             print("Model exists")
         else:
             raise
@@ -61,7 +62,8 @@ def create_endpoint_config():
         )
         print("Endpoint config created")
     except ClientError as e:
-        if e.response["Error"]["Code"] in ("ValidationException", "ResourceInUse"):
+        code = e.response["Error"]["Code"]
+        if code == "ResourceInUse":
             print("Endpoint config exists")
         else:
             raise

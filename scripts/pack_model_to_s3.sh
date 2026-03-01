@@ -15,6 +15,12 @@ echo
 tar -C models -czf models/model.tar.gz sam3/checkpoints ollama/models
 du -sh models/model.tar.gz
 
+BUCKET="${S3_URI#s3://}"
+BUCKET="${BUCKET%%/*}"
+aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null || \
+aws s3api create-bucket --bucket "$BUCKET" --region "$AWS_REGION" \
+  --create-bucket-configuration LocationConstraint="$AWS_REGION"
+
 aws s3 cp models/model.tar.gz "$S3_URI" --region "$AWS_REGION"
 rm models/model.tar.gz
 

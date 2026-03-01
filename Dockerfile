@@ -19,10 +19,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     OLLAMA_MODELS=/opt/ml/model/ollama/models \
     SAM3_CHECKPOINT_DIR=/opt/ml/model/sam3/checkpoints
 
-# System dependencies: git for cloning SAM3 repo, CA certs, curl for health checks, supervisor for multi-service
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git ca-certificates curl wget \
-    supervisor build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Working directory for application code
@@ -48,9 +46,6 @@ RUN curl -fsSL https://ollama.ai/install.sh | sh
 
 # Copy FastAPI application code
 COPY src/ /opt/program/src/
-
-# Copy supervisord configuration for managing multiple services
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Add the SageMaker-compatible entrypoint script
 COPY serve /usr/local/bin/serve

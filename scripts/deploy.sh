@@ -5,7 +5,7 @@ echo "SageMaker Deployment"
 echo
 
 AWS_REGION="${AWS_REGION:-ap-northeast-1}"
-INSTANCE_TYPE="${INSTANCE_TYPE:-ml.g4dn.xlarge}"
+INSTANCE_TYPE="${INSTANCE_TYPE:-ml.g6.xlarge}"
 
 echo -n "AWS Region [$AWS_REGION]: "
 read -r input

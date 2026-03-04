@@ -8,7 +8,7 @@ FastAPI microservice for extracting and analyzing financial tables from PDF docu
 - **LLM Classification**: Text-based page and table type classification with Qwen3-8B
 - **Dual Input**: Image for SAM3 detection + PDF text for LLM classification
 - **SageMaker Ready**: Containerized for AWS SageMaker deployment
-- **GPU Optimized**: CUDA 12.6 support, ml.g4dn.xlarge or better
+- **GPU Optimized**: CUDA 12.6 support, ml.g6.xlarge or better
 
 ## Architecture
 
@@ -226,14 +226,13 @@ python3 scripts/test_online_api.py https://sagemaker-endpoint.com image.png docu
 - Model archive: `s3://table-analysis-storage-models/model.tar.gz`
 - Docker image: ECR repository `financial-table-analysis`
 
-## Requirements
+## Requirements (Local)
 
 - Python 3.10+
 - PyTorch 2.7.0+ with CUDA 12.6
-- Ollama (for local inference)
-- Docker (for containerized deployment)
-- 8GB+ GPU VRAM (minimum)
-- 16GB+ GPU VRAM (recommended for production)
+- Ollama
+- Docker 
+- 16GB+ GPU VRAM
 
 ## Project Structure
 

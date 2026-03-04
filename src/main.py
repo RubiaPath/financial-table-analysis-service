@@ -79,7 +79,7 @@ async def health_check():
 
 @app.post("/api/v1/analyze-page", response_model=AnalyzePageResponse)
 async def analyze_page(request: AnalyzePageRequest):
-    """Analyze financial page"""
+    """Analyze financial page with image and PDF text"""
     try:
         analyzer = get_page_analyzer()
         
@@ -89,9 +89,10 @@ async def analyze_page(request: AnalyzePageRequest):
                 detail="Service not ready - missing required components"
             )
         
-        # Analyze page
+        # Analyze page with both image and text
         response = analyzer.analyze_page(
             image_base64=request.image_base64,
+            pdf_text=request.pdf_text,
             image_height=request.image_height,
             image_width=request.image_width
         )
@@ -109,13 +110,24 @@ async def analyze_page(request: AnalyzePageRequest):
 
 
 @app.post("/api/v1/analyze-page-file", response_model=AnalyzePageResponse)
-async def analyze_page_file(file: UploadFile = File(...)):
-    """Analyze image file"""
+async def analyze_page_file(file: UploadFile = File(...), pdf_text: str = None):
+    """Analyze image file with optional PDF text
+    
+    Args:
+        file: Image file (JPEG/PNG)
+        pdf_text: Raw text from PDF (required for proper classification)
+    """
     try:
         if file.content_type not in ["image/jpeg", "image/png", "image/jpg"]:
             raise HTTPException(
                 status_code=400,
                 detail="Only JPEG and PNG images are supported"
+            )
+        
+        if not pdf_text:
+            raise HTTPException(
+                status_code=400,
+                detail="pdf_text parameter is required for classification"
             )
         
         # Read file and convert to base64
@@ -124,7 +136,7 @@ async def analyze_page_file(file: UploadFile = File(...)):
         image_base64 = base64.b64encode(content).decode('utf-8')
         
         # Use the main analyze endpoint
-        request = AnalyzePageRequest(image_base64=image_base64)
+        request = AnalyzePageRequest(image_base64=image_base64, pdf_text=pdf_text)
         return await analyze_page(request)
     
     except HTTPException:
@@ -143,15 +155,34 @@ async def root():
     return {
         "service": settings.API_TITLE,
         "version": settings.API_VERSION,
+        "description": "Financial document table detection using SAM3 + text-based LLM classification",
         "endpoints": {
             "health": "/health",
-            "analyze_page": "/api/v1/analyze-page",
-            "analyze_page_file": "/api/v1/analyze-page-file",
+            "analyze_page": "/api/v1/analyze-page (POST)",
+            "analyze_page_file": "/api/v1/analyze-page-file (POST)",
             "docs": "/docs"
         },
+        "usage": {
+            "analyze_page": {
+                "description": "Analyze page with image and PDF text",
+                "inputs": {
+                    "image_base64": "Base64 encoded image for SAM3 table detection",
+                    "pdf_text": "Raw text from PDF for LLM classification",
+                    "image_height": "Optional image height",
+                    "image_width": "Optional image width"
+                },
+                "outputs": {
+                    "bboxes": "Detected table coordinates",
+                    "page_type": "Classification from LLM (main/supplement/other)",
+                    "table_type": "Financial table type (BALANCE_SHEET/INCOME_STATEMENT/etc)",
+                    "confidence_page_type": "Page classification confidence",
+                    "confidence_table_type": "Table classification confidence"
+                }
+            }
+        },
         "models": {
-            "ollama": settings.OLLAMA_MODEL,
-            "sam3": "sam3.1_large_ft",
+            "sam3": "Table detection from image",
+            "ollama": f"{settings.OLLAMA_MODEL} for text classification",
             "models_path": str(settings.MODEL_BASE_PATH)
         }
     }

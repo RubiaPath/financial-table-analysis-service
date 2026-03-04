@@ -13,9 +13,10 @@ class BBoxCoordinate(BaseModel):
 
 
 class AnalyzePageRequest(BaseModel):
-    image_base64: str = Field(..., description="Base64 image")
-    image_height: Optional[int] = Field(None, description="Height")
-    image_width: Optional[int] = Field(None, description="Width")
+    image_base64: str = Field(..., description="Base64 image for SAM3 detection")
+    pdf_text: str = Field(..., description="Raw text from PDF for LLM classification")
+    image_height: Optional[int] = Field(None, description="Image height")
+    image_width: Optional[int] = Field(None, description="Image width")
 
 
 class AnalyzePageResponse(BaseModel):

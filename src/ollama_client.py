@@ -28,41 +28,43 @@ class OllamaClient:
             self._ready = False
             return False
     
-    def classify_page_type(self, image_base64: str) -> tuple[Optional[str], float]:
-        """Classify page type"""
-        return self._classify_with_vision(
-            image_base64,
+    def classify_page_type(self, pdf_text: str) -> tuple[Optional[str], float]:
+        """Classify page type based on PDF text"""
+        return self._classify_with_text(
+            pdf_text,
             settings.OLLAMA_PAGE_TYPE_PROMPT,
             settings.PAGE_TYPES
         )
     
-    def classify_table_type(self, image_base64: str) -> tuple[Optional[str], float]:
-        """Classify table type"""
-        return self._classify_with_vision(
-            image_base64,
+    def classify_table_type(self, pdf_text: str) -> tuple[Optional[str], float]:
+        """Classify table type based on PDF text"""
+        return self._classify_with_text(
+            pdf_text,
             settings.OLLAMA_TABLE_TYPE_PROMPT,
             settings.TABLE_TYPES
         )
     
-    def _classify_with_vision(
+    def _classify_with_text(
         self, 
-        image_base64: str, 
+        text: str, 
         prompt: str, 
         valid_categories: list
     ) -> tuple[Optional[str], float]:
-        """Vision classification"""
+        """Text-based classification"""
         if not self._ready:
             logger.warning("Ollama service not ready, attempting connection...")
             if not self.check_health():
                 return None, 0.0
         
         try:
+            # Combine prompt with context text
+            full_prompt = f"{prompt}\n\nContext:\n{text}"
+            
             payload = {
                 "model": self.model,
-                "prompt": prompt,
-                "images": [image_base64],
+                "prompt": full_prompt,
                 "stream": False,
-                "temperature": 0.0  # Deterministic for classification
+                "temperature": 0.0
             }
             
             response = requests.post(
@@ -81,13 +83,12 @@ class OllamaClient:
             # Try to match response to valid categories
             for category in valid_categories:
                 if category.upper() in response_text:
-                    # Confidence based on exact match vs partial match
                     confidence = 0.9 if response_text == category.upper() else 0.7
                     logger.info(f"Classified as: {category} (confidence: {confidence})")
                     return category, confidence
             
             logger.warning(f"Response '{response_text}' did not match any valid category")
-            return valid_categories[0], 0.3  # Default to first category with low confidence
+            return valid_categories[0], 0.3
         
         except requests.exceptions.Timeout:
             logger.error(f"Ollama request timeout (>{self.timeout}s)")

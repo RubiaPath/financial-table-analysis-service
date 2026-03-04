@@ -43,6 +43,7 @@ class PageAnalyzer:
     def analyze_page(
         self, 
         image_base64: str,
+        pdf_text: str,
         image_height: Optional[int] = None,
         image_width: Optional[int] = None
     ) -> AnalyzePageResponse:
@@ -66,20 +67,19 @@ class PageAnalyzer:
             tables = self.sam3.detect_tables(image)
             logger.info(f"SAM3 detected {len(tables)} potential tables")
             
-            # 3. Classify page type
-            page_type, page_confidence = self.ollama.classify_page_type(image_base64)
+            # 3. Classify page type using PDF text
+            page_type, page_confidence = self.ollama.classify_page_type(pdf_text)
             if page_type is None:
                 page_type = "other"
                 page_confidence = 0.3
             logger.info(f"Page type: {page_type} (confidence: {page_confidence})")
             
-            # 4. Classify table type
+            # 4. Classify table type using PDF text
             table_type = "UNKNOWN"
             table_confidence = 0.0
             
             if tables:
-                # Use first table region for classification (or could do all tables)
-                table_type, table_confidence = self.ollama.classify_table_type(image_base64)
+                table_type, table_confidence = self.ollama.classify_table_type(pdf_text)
                 if table_type is None:
                     table_type = "UNKNOWN"
                     table_confidence = 0.0
@@ -109,7 +109,8 @@ class PageAnalyzer:
                 metadata={
                     "num_tables_detected": len(tables),
                     "ollama_model": settings.OLLAMA_MODEL,
-                    "sam3_prompt": settings.SAM3_TEXT_PROMPT
+                    "sam3_prompt": settings.SAM3_TEXT_PROMPT,
+                    "pdf_text_length": len(pdf_text)
                 }
             )
         

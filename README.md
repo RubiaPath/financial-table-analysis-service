@@ -1,12 +1,13 @@
 # Financial Table Analysis Service
 
-FastAPI microservice for extracting and analyzing financial tables from PDF documents using SAM3 (table detection) and Ollama LLM (text-based classification).
+FastAPI microservice for automated page classification and table detection from PDF documents using SAM3 (table detection) and Ollama LLM (text-based classification). Provides API service for the Balance Sheet Extraction Agent.
 
 ## Key Features
 
 - **SAM3 Table Detection**: Segment Anything Model for precise table region detection
 - **LLM Classification**: Text-based page and table type classification with Qwen3-8B
 - **Dual Input**: Image for SAM3 detection + PDF text for LLM classification
+- **Agent Integration**: Serves as backend service for automatic page selection in Agent UI
 - **SageMaker Ready**: Containerized for AWS SageMaker deployment
 - **GPU Optimized**: CUDA 12.6 support, ml.g6.xlarge or better
 

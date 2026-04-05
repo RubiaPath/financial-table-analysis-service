@@ -18,20 +18,32 @@ from pathlib import Path
 
 def apply_hf_offline_patch(model_dir_env: str = "SM_MODEL_DIR", subdir: str = "sam3/checkpoints") -> None:
     """
-    Force all HF hub downloads to resolve from local files under:
-      ${SM_MODEL_DIR}/sam3/checkpoints/<filename>
+    Force all HF hub downloads to resolve from local HF cache format.
+    Supports standard HuggingFace cache structure with blobs/ and snapshots/ dirs.
     This prevents gated repo 401 on SageMaker.
     """
     model_dir = Path(os.environ.get(model_dir_env, "/opt/ml/model"))
     local = model_dir / subdir
 
     def _local_hf_hub_download(repo_id, filename, *args, **kwargs):
-        p = local / filename
-        if not p.exists():
-            raise FileNotFoundError(f"Local file not found for {filename}: {p}")
-        return str(p)
+        # For HF cache format: search in snapshots/<hash>/ directories
+        snapshots_dir = local / "snapshots"
+        if snapshots_dir.exists():
+            for snapshot_path in snapshots_dir.iterdir():
+                if snapshot_path.is_dir():
+                    candidate = snapshot_path / filename
+                    if candidate.exists():
+                        return str(candidate)
+        
+        raise FileNotFoundError(f"Local file not found for {filename} in {local}")
 
     def _local_snapshot_download(repo_id, *args, **kwargs):
+        # Return first snapshot directory found
+        snapshots_dir = local / "snapshots"
+        if snapshots_dir.exists():
+            for snapshot_path in snapshots_dir.iterdir():
+                if snapshot_path.is_dir():
+                    return str(snapshot_path)
         return str(local)
 
     import huggingface_hub

@@ -49,6 +49,9 @@ Thumbs.db
 *.tmp
 *.temp
 
+# S3 deployment URI (auto-generated)
+.s3_model_uri
+
 # Docker
 .dockerignore
 
@@ -59,6 +62,7 @@ logs/
 # Documents
 docs/
 images/
+pdf/
 
 # Test results
 .pytest_cache/

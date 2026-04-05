@@ -9,7 +9,9 @@ class BBoxCoordinate(BaseModel):
     y1: float = Field(..., description="Top-left y (pixels)")
     x2: float = Field(..., description="Bottom-right x (pixels)")
     y2: float = Field(..., description="Bottom-right y (pixels)")
-    confidence: float = Field(..., ge=0, le=1, description="Confidence")
+    confidence: float = Field(..., ge=0, le=1, description="Detection confidence")
+    table_type: Optional[str] = Field(None, description="Table type classification (for PDF analysis)")
+    confidence_table_type: Optional[float] = Field(None, ge=0, le=1, description="Table type confidence (for PDF analysis)")
 
 
 class AnalyzePageRequest(BaseModel):
@@ -36,3 +38,20 @@ class HealthCheck(BaseModel):
     sam3_ready: bool = Field(..., description="SAM3 ready")
     ollama_ready: bool = Field(..., description="Ollama ready")
     models_dir_exists: bool = Field(..., description="Models dir exists")
+
+
+class PDFPageResult(BaseModel):
+    page_number: int = Field(..., description="Page number (1-indexed)")
+    page_type: str = Field(..., description="Page type (main/supplement/other)")
+    tables: List[BBoxCoordinate] = Field(default_factory=list, description="Detected tables with individual classifications")
+    image_height: int = Field(..., description="Page height (pixels)")
+    image_width: int = Field(..., description="Page width (pixels)")
+    confidence_page_type: float = Field(..., ge=0, le=1, description="Page type confidence")
+    pdf_text: Optional[str] = Field(None, description="Extracted text from page")
+
+
+class AnalyzePDFResponse(BaseModel):
+    total_pages: int = Field(..., description="Total pages in PDF")
+    pages_with_tables: int = Field(..., description="Pages with detected tables")
+    pages: List[PDFPageResult] = Field(..., description="Results per page")
+    metadata: Optional[dict] = Field(default_factory=dict, description="Metadata")

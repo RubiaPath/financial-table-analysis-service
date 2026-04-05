@@ -8,12 +8,17 @@ from botocore.exceptions import ClientError
 AWS_REGION = os.getenv("AWS_REGION", "ap-northeast-1")
 ROLE_ARN = os.environ.get("ROLE_ARN")
 IMAGE_URI = os.environ.get("IMAGE_URI")
+S3_MODEL_URI = os.environ.get("S3_MODEL_URI")
 
 if not ROLE_ARN or not IMAGE_URI:
     print("ERROR: ROLE_ARN and IMAGE_URI required")
     sys.exit(1)
 
-MODEL_DATA_URL = os.getenv("MODEL_DATA_URL", "s3://table-analysis-storage-models/model.tar.gz")
+if not S3_MODEL_URI:
+    print("ERROR: S3_MODEL_URI required")
+    sys.exit(1)
+
+MODEL_DATA_URL = S3_MODEL_URI
 INSTANCE_TYPE = os.getenv("INSTANCE_TYPE", "ml.g6.xlarge")
 MODEL_NAME = os.getenv("MODEL_NAME", "financial-table-analysis-model")
 EPC_NAME = os.getenv("EPC_NAME", "financial-table-analysis-epc")

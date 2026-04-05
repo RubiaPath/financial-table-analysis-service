@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 import uvicorn
 
 from src.config import settings
-from src.models import AnalyzePageRequest, AnalyzePageResponse, HealthCheck
+from src.models import AnalyzePageRequest, AnalyzePageResponse, HealthCheck, AnalyzePDFResponse
 from src.analyzer import get_page_analyzer
 from src.ollama_client import OllamaClient
 from src.sam3_detector import get_sam3_detector
@@ -149,6 +149,74 @@ async def analyze_page_file(file: UploadFile = File(...), pdf_text: str = None):
         )
 
 
+@app.post("/api/v1/analyze-pdf")
+async def analyze_pdf(file: UploadFile = File(...)):
+    """Batch analyze all pages in PDF for table detection
+    
+    Args:
+        file: PDF file
+    
+    Returns:
+        {
+            "total_pages": int,
+            "pages_with_tables": int,
+            "pages": [
+                {
+                    "page_number": int,
+                    "tables": [
+                        {"x1": float, "y1": float, "x2": float, "y2": float, "confidence": float},
+                        ...
+                    ],
+                    "image_height": int,
+                    "image_width": int
+                },
+                ...
+            ],
+            "metadata": {...}
+        }
+    """
+    try:
+        if file.content_type != "application/pdf":
+            raise HTTPException(
+                status_code=400,
+                detail="Only PDF files are supported"
+            )
+        
+        analyzer = get_page_analyzer()
+        
+        if not analyzer.is_ready():
+            raise HTTPException(
+                status_code=503,
+                detail="Service not ready - missing required components"
+            )
+        
+        # Read PDF file
+        pdf_bytes = await file.read()
+        
+        # Analyze all pages
+        response = analyzer.analyze_pdf(pdf_bytes)
+        
+        return response
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Analyze PDF request failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"PDF analysis failed: {str(e)}"
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Analyze page file request failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"File analysis failed: {str(e)}"
+        )
+
+
 @app.get("/")
 async def root():
     """Root endpoint with service info"""
@@ -160,6 +228,7 @@ async def root():
             "health": "/health",
             "analyze_page": "/api/v1/analyze-page (POST)",
             "analyze_page_file": "/api/v1/analyze-page-file (POST)",
+            "analyze_pdf": "/api/v1/analyze-pdf (POST)",
             "docs": "/docs"
         },
         "usage": {

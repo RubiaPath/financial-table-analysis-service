@@ -9,6 +9,7 @@ psutil
 pycocotools
 decord
 python-multipart
+pymupdf
 
 # Note: torch, torchvision, and CUDA are included in the PyTorch base image
 # SAM3 will be installed from source in the Dockerfile
